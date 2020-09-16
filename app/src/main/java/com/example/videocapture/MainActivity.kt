@@ -13,20 +13,20 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.FileOutputStream
+import com.example.videocapture.ICaptureService
 
 
 class MainActivity : AppCompatActivity() {
 
     val video_URL = "https://vt.tumblr.com/tumblr_o600t8hzf51qcbnq0_480.mp4"
     val mediaRet = MediaMetadataRetriever()
-    lateinit var captureService : CaptureService
+    lateinit var captureService : ICaptureService
     var isBound = false
 
     private val connection = object : ServiceConnection {
 
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as CaptureService.CaptureBinder
-            captureService = binder.getService()
+            captureService = ICaptureService.Stub.asInterface(service)
             isBound = true
         }
 
@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
                 val parcelFD = contentResolver.openFileDescriptor(uri, "r", null)
 
                  if(parcelFD != null) {
-                     Log.v("slee", "Let's pushFD() : URI = ${uri.toString()}")
+                     Log.v("SLEE", "Let's pushFD() : URI = ${uri.toString()}")
 
                     // get native FD.
                     val nativeFD = parcelFD.detachFd()
@@ -71,7 +71,8 @@ class MainActivity : AppCompatActivity() {
             val nativeFD = captureService.pullFD()
 
             if(nativeFD != CaptureService.FD_NOT_SETTED) {
-                val bitMap = getBitmapFromNativeFD(nativeFD)
+                Log.v("SLEE", "Let's pull & draw : nativeFD = $nativeFD")
+                val bitMap = makeNativeFdIntoBitmap(nativeFD)
                 imageView.setImageBitmap(bitMap)
             }
         }
@@ -121,7 +122,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun getBitmapFromNativeFD(nativeFD : Int) : Bitmap {
+    fun makeNativeFdIntoBitmap(nativeFD : Int) : Bitmap {
         val parcelFD = ParcelFileDescriptor.adoptFd(nativeFD)
         val FD = parcelFD.fileDescriptor
         val bitMap = BitmapFactory.decodeFileDescriptor(FD)

@@ -22,7 +22,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name="CaptureService"/>
+        <service android:name="CaptureService" android:process=":remote"/>
 
     </application>
 

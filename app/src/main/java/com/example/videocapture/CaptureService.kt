@@ -8,20 +8,42 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 
 
+
 class CaptureService : Service() {
 
     //val slee : Log.(String) -> Unit = {msg -> Log.v("SLEE", msg)}
     companion object {
         val FD_NOT_SETTED = -1
     }
+    private var stored_fd : Int = FD_NOT_SETTED
 
-    inner class CaptureBinder : Binder() {
+    inner class CaptureBinder : ICaptureService.Stub() {
         fun getService() : CaptureService {
             return this@CaptureService
         }
+
+        override fun pushFD(fd : Int) {
+            if(stored_fd != FD_NOT_SETTED) {
+                Log.v("slee", "pushFD() : there is previous FD ! : fd = $stored_fd : close it !")
+                // close previous fd
+                val parcelFD = ParcelFileDescriptor.adoptFd(stored_fd)
+                parcelFD.close()
+
+                stored_fd = FD_NOT_SETTED
+            }
+            stored_fd = fd
+            Log.v("slee", "push FD : $stored_fd")
+        }
+
+        override fun pullFD() : Int {
+            Log.v("slee", "pull FD : $stored_fd")
+            val ret = stored_fd
+            stored_fd = FD_NOT_SETTED
+            return ret
+        }
     }
 
-    private val binder = CaptureBinder()
+    val binder = CaptureBinder()
 
     override fun onBind(intent: Intent?): IBinder? {
         return binder
@@ -29,26 +51,7 @@ class CaptureService : Service() {
 
 
 
-    private var stored_fd : Int = FD_NOT_SETTED
 
-    fun pushFD(fd : Int) {
-        if(stored_fd != FD_NOT_SETTED) {
-            Log.v("slee", "pushFD() : there is previous FD ! : fd = $stored_fd : close it !")
-            // close previous fd
-            val parcelFD = ParcelFileDescriptor.adoptFd(stored_fd)
-            parcelFD.close()
 
-            stored_fd = FD_NOT_SETTED
-        }
-        stored_fd = fd
-        Log.v("slee", "push FD : $stored_fd")
-     }
-
-    fun pullFD() : Int {
-        Log.v("slee", "pull FD : $stored_fd")
-        val ret = stored_fd
-        stored_fd = FD_NOT_SETTED
-        return ret
-    }
 
 }
